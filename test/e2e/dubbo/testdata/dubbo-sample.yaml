@@ -15,6 +15,7 @@ spec:
       labels:
         app: dubbo-sample-provider
         version: v1
+        service_group: user
     spec:
       containers:
         - name: dubbo-sample-provider
@@ -38,6 +39,7 @@ spec:
       labels:
         app: dubbo-sample-provider
         version: v2
+        service_group: batchjob
     spec:
       containers:
         - name: dubbo-sample-provider
@@ -66,22 +68,3 @@ spec:
           image: aeraki/dubbo-sample-consumer
           ports:
             - containerPort: 9009
----
-# network-tool is used for debugging purpose
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#  name: network-tool
-# spec:
-#  selector:
-#    matchLabels:
-#      app: network-tool
-#  replicas: 1
-#  template:
-#    metadata:
-#      labels:
-#        app: network-tool
-#    spec:
-#      containers:
-#        - name: network-tool
-#          image: praqma/network-multitool

@@ -22,7 +22,6 @@ import (
 	"syscall"
 
 	"github.com/aeraki-framework/aeraki/pkg/envoyfilter"
-	"github.com/aeraki-framework/aeraki/plugin/dubbo"
 	"github.com/aeraki-framework/aeraki/plugin/kafka"
 	"github.com/aeraki-framework/aeraki/plugin/thrift"
 	"github.com/aeraki-framework/aeraki/plugin/zookeeper"
@@ -41,10 +40,12 @@ const (
 
 func main() {
 	args := bootstrap.NewAerakiArgs()
-	flag.StringVar(&args.IstiodAddr, "istiodaddr", defaultIstiodAddr, "Istiod xds server address")
-	flag.StringVar(&args.Namespace, "namespace", defaultNamespace, "Current namespace")
+	flag.StringVar(&args.IstiodAddr, "istiod-address", defaultIstiodAddr, "Istiod xds server address")
+	flag.StringVar(&args.Namespace, "namespace", defaultNamespace, "The current namespace where Aeraki is deployed")
+	flag.StringVar(&args.ConfigStoreSecret, "config-store-secret", defaultNamespace,
+		"The secret to store the Istio kube config store, use the in cluster API server if it's not specified")
 	flag.StringVar(&args.ElectionID, "electionID", defaultElectionID, "ElectionID to elect master controller")
-	flag.StringVar(&args.LogLevel, "logLevel", defaultLogLevel, "Component log level")
+	flag.StringVar(&args.LogLevel, "log-level", defaultLogLevel, "Component log level")
 	flag.Parse()
 
 	setLogLevels(args.LogLevel)
@@ -65,7 +66,6 @@ func main() {
 
 func initGenerators() map[protocol.Instance]envoyfilter.Generator {
 	return map[protocol.Instance]envoyfilter.Generator{
-		protocol.Dubbo:     dubbo.NewGenerator(),
 		protocol.Thrift:    thrift.NewGenerator(),
 		protocol.Kafka:     kafka.NewGenerator(),
 		protocol.Zookeeper: zookeeper.NewGenerator(),

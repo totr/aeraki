@@ -26,7 +26,7 @@ We are facing some challenges in Istio traffic management:
 * Although you could change Pilot code to support other protocols, maintanence of an Istio fork is inevitable, which makes further upgrading process painful.
 * EnvoyFilter could be a possible solution, but it can be very difficult to manually create and maintain those EnvoyFilters, especially in a large service mesh - too many trivial details and moving parts!
 
-To address these problems, Aeraki works alongside Istio and provides an extensive way to manage the traffic of any layer 7 protocols.
+To address these problems, Aeraki works alongside Istio, providing an non-intrusive, extendable way to manage any layer 7 traffic in a service mesh.
 
 Aeraki is a standalone component in the service mesh control plane. It follows a non-intrusive design and leverages Istio's [EnvoyFilter API](https://istio.io/latest/docs/reference/config/networking/envoy-filter/) to push the configurations to the Envoy sidecar proxies.
 
@@ -39,23 +39,39 @@ Although Aeraki is a standalone component, it does depend on Istio [xds-mcp API]
 Similar to Istio, protocols are identified by service port prefix. Please name service ports with this pattern: `tcp-protocol-xxxx`. For example, a dubbo service port may be named as `tcp-dubbo-service`. Please keep `tcp` at the beginning of the port name because it is a TCP service from the perspective of Istio.
 
 ## Reference
-[Redis (中文) ](docs/zh/redis.md)
+
+* [Dubbo (中文) ](https://github.com/aeraki-framework/dubbo2istio#readme)
+* [Redis (中文) ](docs/zh/redis.md)
+* [LazyXDS（xDS 按需加载）](lazyxds/README.md)
 
 ## Supported protocols:
 * Dubbo
-  * [x] Default routing
-  * [x] Version-based routing
-  * [x] Traffic splitting
-  * [x] Metrics
-  * [x] Method based routing
-  * [  ] Header based routing
+  * Service Discovery
+    * [x] ServiceEntry Integration ([Example](https://github.com/aeraki-framework/aeraki/blob/master/demo/dubbo/serviceentry.yaml))
+    * [x] [ZooKeeper Integration](https://github.com/aeraki-framework/dubbo2istio)
+    * [x] [Nacos Integration](https://github.com/aeraki-framework/dubbo2istio)
+  * Traffic Management
+    * [x] Request Level Load Balancing
+    * [x] Version Based Routing
+    * [x] Traffic Splitting
+    * [x] Method Based Routing
+    * [x] Header Based Routing
+    * [x] Crcuit Breaker
+    * [x] Locality Load Balancing
+  * Observability
+    * [x] Dubbo Request Metrics
+  * Security 
+    * [x] Peer Authorization on Interface/Method
+    * [ ] Rquest Authorization
 * Thrift
-  * [x] Default routing
-  * [x] Version-based routing
-  * [x] Traffic splitting
-  * [x] Metrics
-  * [  ] Header based routing
-  * [  ] Rate limit
+  * Traffic Management
+    * [x] Request Level Load Balancing
+    * [x] Version Based Routing
+    * [x] Traffic Splitting
+    * [ ] Header Based Routing
+    * [ ] Rate Limit
+  * Observability
+    * [x] Thrift Request Metrics
 * Kafka
   * [x] Metrics
 * ZooKeeper
@@ -63,9 +79,9 @@ Similar to Istio, protocols are identified by service port prefix. Please name s
 * Redis
   * [x] Redis Cluster
   * [x] Sharding
-  * [x] Prefix routing
+  * [x] Prefix Routing
   * [x] Auth
-  * [x] Traffic mirroring
+  * [x] Traffic Mirroring
 * [ ] MySql
 * [ ] MongoDB
 * [ ] Postgres

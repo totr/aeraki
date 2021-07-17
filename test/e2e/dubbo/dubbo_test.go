@@ -50,9 +50,9 @@ func TestSidecarOutboundConfig(t *testing.T) {
 	util.WaitForDeploymentsReady("dubbo", 10*time.Minute, "")
 	time.Sleep(10 * time.Second) //wait for serviceentry vip allocation
 	consumerPod, _ := util.GetPodName("dubbo", "app=dubbo-sample-consumer", "")
-	config, _ := util.PodExec("dubbo", consumerPod, "istio-proxy", "curl -s 127.0.0.1:15000/config_dump", true, "")
+	config, _ := util.PodExec("dubbo", consumerPod, "istio-proxy", "curl -s 127.0.0.1:15000/config_dump", false, "")
 	config = strings.Join(strings.Fields(config), "")
-	want := "{\n\"name\":\"envoy.filters.network.dubbo_proxy\",\n\"typed_config\":{\n\"@type\":\"type.googleapis.com/envoy.extensions.filters.network.dubbo_proxy.v3.DubboProxy\",\n\"stat_prefix\":\"outbound|20880||org.apache.dubbo.samples.basic.api.demoservice\",\n\"route_config\":[\n{\n\"name\":\"outbound|20880||org.apache.dubbo.samples.basic.api.demoservice\",\n\"interface\":\"org.apache.dubbo.samples.basic.api.DemoService\",\n\"routes\":[\n{\n\"match\":{\n\"method\":{\n\"name\":{\n\"safe_regex\":{\n\"google_re2\":{},\n\"regex\":\".*\"\n}\n}\n}\n},\n\"route\":{\n\"cluster\":\"outbound|20880||org.apache.dubbo.samples.basic.api.demoservice\"\n}\n}\n]\n}\n]\n}\n}\n]\n}"
+	want := "{\n \"name\": \"envoy.filters.network.dubbo_proxy\",\n \"typed_config\": {\n\"@type\": \"type.googleapis.com/envoy.extensions.filters.network.dubbo_proxy.v3.DubboProxy\",\n\"stat_prefix\": \"outbound|20880||org.apache.dubbo.samples.basic.api.testservice\",\n\"route_config\": [\n {\n\"name\": \"outbound|20880||org.apache.dubbo.samples.basic.api.testservice\",\n\"interface\": \"org.apache.dubbo.samples.basic.api.TestService\",\n\"routes\": [\n {\n\"match\": {\n \"method\": {\n\"name\": {\n \"safe_regex\": {\n\"google_re2\": {},\n\"regex\": \".*\"\n }\n}\n }\n},\n\"route\": {\n \"cluster\": \"outbound|20880||org.apache.dubbo.samples.basic.api.testservice\"\n}\n }\n]\n }\n],\n\"dubbo_filters\": [\n {\n\"name\": \"envoy.filters.dubbo.router\"\n }\n]\n }\n}\n ]\n}"
 	want = strings.Join(strings.Fields(want), "")
 	if !strings.Contains(config, want) {
 		t.Errorf("cant't find dubbo proxy in the outbound listener of the envoy sidecar: conf \n %s, want \n %s", config, want)
@@ -61,11 +61,11 @@ func TestSidecarOutboundConfig(t *testing.T) {
 
 func TestSidecarInboundConfig(t *testing.T) {
 	util.WaitForDeploymentsReady("dubbo", 10*time.Minute, "")
-	time.Sleep(10 * time.Second) //wait for serviceentry vip allocation
-	consumerPod, _ := util.GetPodName("dubbo", "app=dubbo-sample-provider", "")
-	config, _ := util.PodExec("dubbo", consumerPod, "istio-proxy", "curl -s 127.0.0.1:15000/config_dump", true, "")
+	time.Sleep(1 * time.Minute) //wait for serviceentry vip allocation
+	providerPod, _ := util.GetPodName("dubbo", "app=dubbo-sample-provider", "")
+	config, _ := util.PodExec("dubbo", providerPod, "istio-proxy", "curl -s 127.0.0.1:15000/config_dump", false, "")
 	config = strings.Join(strings.Fields(config), "")
-	want := "{\n\"name\":\"envoy.filters.network.dubbo_proxy\",\n\"typed_config\":{\n\"@type\":\"type.googleapis.com/envoy.extensions.filters.network.dubbo_proxy.v3.DubboProxy\",\n\"stat_prefix\":\"inbound|20880||\",\n\"route_config\":[\n{\n\"name\":\"inbound|20880||\",\n\"interface\":\"org.apache.dubbo.samples.basic.api.DemoService\",\n\"routes\":[\n{\n\"match\":{\n\"method\":{\n\"name\":{\n\"safe_regex\":{\n\"google_re2\":{},\n\"regex\":\".*\"\n}\n}\n}\n},\n\"route\":{\n\"cluster\":\"inbound|20880||\"\n}\n}\n]\n}\n]\n}\n}"
+	want := "{\n\"name\":\"envoy.filters.network.dubbo_proxy\",\n\"typed_config\":{\n\"@type\":\"type.googleapis.com/envoy.extensions.filters.network.dubbo_proxy.v3.DubboProxy\",\n\"stat_prefix\":\"inbound|20880||\",\n\"route_config\":[\n{\n\"name\":\"inbound|20880||\",\n\"interface\":\"*\",\n\"routes\":[\n{\n\"match\":{\n\"method\":{\n\"name\":{\n\"safe_regex\":{\n\"google_re2\":{},\n\"regex\":\".*\"\n}\n}\n}\n},\n\"route\":{\n\"cluster\":\"inbound|20880||\"\n}\n}\n]\n}\n],\n\"dubbo_filters\":[\n{\n\"name\":\"envoy.filters.dubbo.router\"\n}\n]\n}\n}"
 	want = strings.Join(strings.Fields(want), "")
 	if !strings.Contains(config, want) {
 		t.Errorf("cant't find dubbo proxy in the inbound listener of the envoy sidecar: conf \n %s, want \n %s", config, want)
@@ -86,7 +86,8 @@ func testVersion(version string, t *testing.T) {
 	time.Sleep(1 * time.Minute)
 	consumerPod, _ := util.GetPodName("dubbo", "app=dubbo-sample-consumer", "")
 	for i := 0; i < 5; i++ {
-		dubboResponse, _ := util.PodExec("dubbo", consumerPod, "dubbo-sample-consumer", "curl -s 127.0.0.1:9009/hello", true, "")
+		dubboResponse, _ := util.PodExec("dubbo", consumerPod, "dubbo-sample-consumer",
+			"curl -s 127.0.0.1:9009/hello", false, "")
 		want := "response from dubbo-sample-provider-" + version
 		log.Info(dubboResponse)
 		if !strings.Contains(dubboResponse, want) {
@@ -105,7 +106,8 @@ func TestPercentageRouting(t *testing.T) {
 	consumerPod, _ := util.GetPodName("dubbo", "app=dubbo-sample-consumer", "")
 	v1 := 0
 	for i := 0; i < 40; i++ {
-		dubboResponse, _ := util.PodExec("dubbo", consumerPod, "dubbo-sample-consumer", "curl -s 127.0.0.1:9009/hello", true, "")
+		dubboResponse, _ := util.PodExec("dubbo", consumerPod, "dubbo-sample-consumer",
+			"curl -s 127.0.0.1:9009/hello", false, "")
 		responseV1 := "response from dubbo-sample-provider-v1"
 		log.Info(dubboResponse)
 		if strings.Contains(dubboResponse, responseV1) {
@@ -133,11 +135,48 @@ func testMethodMatch(matchPattern string, t *testing.T) {
 	time.Sleep(1 * time.Minute)
 	consumerPod, _ := util.GetPodName("dubbo", "app=dubbo-sample-consumer", "")
 	for i := 0; i < 5; i++ {
-		dubboResponse, _ := util.PodExec("dubbo", consumerPod, "dubbo-sample-consumer", "curl -s 127.0.0.1:9009/hello", true, "")
+		dubboResponse, _ := util.PodExec("dubbo", consumerPod, "dubbo-sample-consumer",
+			"curl -s 127.0.0.1:9009/hello", false, "")
 		want := "response from dubbo-sample-provider-v2"
 		log.Info(dubboResponse)
 		if !strings.Contains(dubboResponse, want) {
 			t.Errorf("method routing failed, want: %s, got %s", want, dubboResponse)
 		}
+	}
+}
+
+func TestHeaderMatch(t *testing.T) {
+	util.KubeApply("dubbo", "testdata/virtualservice-header-exact.yaml", "")
+	log.Info("Waiting for rules to propagate ...")
+	time.Sleep(1 * time.Minute)
+	consumerPod, _ := util.GetPodName("dubbo", "app=dubbo-sample-consumer", "")
+	for i := 0; i < 5; i++ {
+		dubboResponse, _ := util.PodExec("dubbo", consumerPod, "dubbo-sample-consumer",
+			"curl -s 127.0.0.1:9009/hello", false, "")
+		want := "response from dubbo-sample-provider-v2"
+		log.Info(dubboResponse)
+		if !strings.Contains(dubboResponse, want) {
+			t.Errorf("method routing failed, want: %s, got %s", want, dubboResponse)
+		}
+	}
+}
+
+func TestMultipleInterfacesInAProcess(t *testing.T) {
+	util.WaitForDeploymentsReady("dubbo", 10*time.Minute, "")
+	consumerPod, _ := util.GetPodName("dubbo", "app=dubbo-sample-consumer", "")
+	dubboResponse, _ := util.PodExec("dubbo", consumerPod, "dubbo-sample-consumer",
+		"curl -s 127.0.0.1:9009/hello", false, "")
+	want := "response from dubbo-sample-provider-"
+	log.Info(dubboResponse)
+	if !strings.Contains(dubboResponse, want) {
+		t.Errorf("call dubbo interface failed, want: %s, got %s", want, dubboResponse)
+	}
+
+	dubboResponse, _ = util.PodExec("dubbo", consumerPod, "dubbo-sample-consumer",
+		"curl -s 127.0.0.1:9009/test", false, "")
+	want = "response from dubbo-sample-provider-"
+	log.Info(dubboResponse)
+	if !strings.Contains(dubboResponse, want) {
+		t.Errorf("call dubbo interface failed, want: %s, got %s", want, dubboResponse)
 	}
 }
